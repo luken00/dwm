@@ -21,7 +21,6 @@ static const char *colors[][3]      = {
 /** -------------------- **/
 /** lk defined constants **/
 /** -------------------- **/
-
 /* inner-paddings for status bar */
 static const int __innerhpad = 10;
 static const int __innervpad = 10;
