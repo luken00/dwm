@@ -18,6 +18,19 @@ static const char *colors[][3]      = {
 	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
 };
 
+/** -------------------- **/
+/** lk defined constants **/
+/** -------------------- **/
+
+/* inner-paddings for status bar */
+static const int __innerhpad = 10;
+static const int __innervpad = 10;
+/* outer-paddings for status bar */
+static const int __outerhpad = 10;
+static const int __outervpad = 10;
+/* gaps between clients */
+static const int __gaps = 8;
+
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
