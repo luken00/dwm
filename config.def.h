@@ -22,13 +22,13 @@ static const char *colors[][3]      = {
 /** lk defined constants **/
 /** -------------------- **/
 /* inner-paddings for status bar */
-static const int __innerhpad = 10;
-static const int __innervpad = 10;
+static const int __innerhpad = 8;
+static const int __innervpad = 8;
 /* outer-paddings for status bar */
-static const int __outerhpad = 10;
-static const int __outervpad = 10;
+static const int __outerhpad = 16;
+static const int __outervpad = 16;
 /* gaps between clients */
-static const int __gaps = 8;
+static const int __gaps = 16;
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -106,6 +106,10 @@ static Key keys[] = {
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
+
+	{ MODKEY, XK_minus, setgaps, {.i = -1 }},
+	{ MODKEY, XK_equal, setgaps, {.i = +1 }},
+	{ MODKEY|ShiftMask, XK_equal, setgaps, { .i = 0 }},
 };
 
 /* button definitions */
