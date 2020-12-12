@@ -63,7 +63,7 @@ enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
 enum { SchemeNorm, SchemeSel }; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-       NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
+       NetWMWindowTypeDialog, NetClientList, NetLast, NetWMWindowsOpacity }; /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
@@ -96,6 +96,7 @@ struct Client {
 	int isfixed, iscentered, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
 	Client *next;
 	Client *snext;
+	double opacity;
 	Monitor *mon;
 	Window win;
 };
@@ -141,6 +142,7 @@ typedef struct {
 	unsigned int tags;
 	int iscentered;
 	int isfloating;
+	double opacity;
 	int monitor;
 } Rule;
 
@@ -148,7 +150,8 @@ typedef struct {
 enum resource_type {
 	STRING = 0,
 	INTEGER = 1,
-	FLOAT = 2
+	FLOAT = 2,
+	DOUBLE = 3,
 };
 
 typedef struct {
@@ -203,6 +206,7 @@ static void monocle(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
 static Client *nexttiled(Client *c);
+static void opacity(Client *c, double opacity);
 static void pop(Client *);
 static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
@@ -287,7 +291,7 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[PropertyNotify] = propertynotify,
 	[UnmapNotify] = unmapnotify
 };
-static Atom wmatom[WMLast], netatom[NetLast];
+static Atom wmatom[WMLast], netatom[NetWMWindowsOpacity];
 static int running = 1;
 static Cur *cursor[CurLast];
 static Clr **scheme;
@@ -316,6 +320,7 @@ applyrules(Client *c)
 	c->iscentered = 0;
 	c->isfloating = 0;
 	c->tags = 0;
+	c->opacity = __normalopacity;
 	XGetClassHint(dpy, c->win, &ch);
 	class    = ch.res_class ? ch.res_class : broken;
 	instance = ch.res_name  ? ch.res_name  : broken;
@@ -329,6 +334,7 @@ applyrules(Client *c)
 			c->iscentered = r->iscentered;
 			c->isfloating = r->isfloating;
 			c->tags |= r->tags;
+			c->opacity = r->opacity;
 			for (m = mons; m && m->num != r->monitor; m = m->next);
 			if (m)
 				c->mon = m;
@@ -1275,6 +1281,13 @@ nexttiled(Client *c)
 	return c;
 }
 
+void opacity(Client *c, double opacity)
+{
+	// double clamp_opacity = MAX(0, MIN(1, opacity));
+	unsigned long real_opacity[] = { opacity * 0xffffffff };
+	XChangeProperty(dpy, c->win, netatom[NetWMWindowsOpacity], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)real_opacity, 1);
+}
+
 void
 pop(Client *c)
 {
@@ -1541,6 +1554,7 @@ setfocus(Client *c)
 		XChangeProperty(dpy, root, netatom[NetActiveWindow],
 			XA_WINDOW, 32, PropModeReplace,
 			(unsigned char *) &(c->win), 1);
+		opacity(c, __selectedopacity);
 	}
 	sendevent(c, wmatom[WMTakeFocus]);
 }
@@ -1650,6 +1664,7 @@ setup(void)
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
+	netatom[NetWMWindowsOpacity] = XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", False);
 	/* init cursors */
 	cursor[CurNormal] = drw_cur_create(drw, XC_left_ptr);
 	cursor[CurResize] = drw_cur_create(drw, XC_sizing);
@@ -1861,6 +1876,7 @@ unfocus(Client *c, int setfocus)
 {
 	if (!c)
 		return;
+	opacity(c, __normalopacity);
 	grabbuttons(c, 0);
 	XSetWindowBorder(dpy, c->win, scheme[SchemeNorm][ColBorder].pixel);
 	if (setfocus) {
@@ -2244,10 +2260,12 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
 	char *sdst = NULL;
 	int *idst = NULL;
 	float *fdst = NULL;
+	double *ddst = NULL;
 
 	sdst = dst;
 	idst = dst;
 	fdst = dst;
+	ddst = dst;
 
 	char fullname[256];
 	char *type;
@@ -2268,6 +2286,8 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
 			case FLOAT:
 				*fdst = strtof(ret.addr, NULL);
 				break;
+			case DOUBLE:
+				*ddst = strtod(ret.addr, NULL);
 		}
 	}
 }
