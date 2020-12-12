@@ -197,7 +197,7 @@ drw_fontset_free(Fnt *font)
 }
 
 void
-drw_clr_create(Drw *drw, Clr *dest, const char *clrname, unsigned int alpha)
+drw_clr_create(Drw *drw, Clr *dest, char *clrname, unsigned int alpha)
 {
 	if (!drw || !dest || !clrname)
 		return;
